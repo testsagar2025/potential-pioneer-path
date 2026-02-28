@@ -2,35 +2,55 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getTestResults, type TestResult } from '@/lib/auth';
-import { LogOut, Users, Eye, Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { getAllTestResults, checkIsAdmin, signOut, type TestResult } from '@/lib/auth';
+import { useAuth } from '@/hooks/useAuth';
+import { LogOut, Users, Eye, Download } from 'lucide-react';
 import StudentReport from '@/components/StudentReport';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [results, setResults] = useState<TestResult[]>([]);
   const [selectedResult, setSelectedResult] = useState<TestResult | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loadingResults, setLoadingResults] = useState(true);
 
   useEffect(() => {
-    const isAdmin = localStorage.getItem('admin_auth');
-    if (!isAdmin) {
-      navigate('/admin-login');
-      return;
-    }
-    setResults(getTestResults());
-  }, [navigate]);
+    if (authLoading) return;
+    if (!user) { navigate('/admin-login'); return; }
 
-  const handleLogout = () => {
-    localStorage.removeItem('admin_auth');
+    checkIsAdmin(user.id).then(isAdmin => {
+      if (!isAdmin) { navigate('/admin-login'); return; }
+      getAllTestResults().then(data => {
+        setResults(data);
+        setLoadingResults(false);
+      });
+    });
+  }, [user, authLoading, navigate]);
+
+  const handleLogout = async () => {
+    await signOut();
     navigate('/');
   };
 
-  const handleClearAll = () => {
-    if (window.confirm('Clear all test results? This cannot be undone.')) {
-      localStorage.removeItem('test_results');
-      setResults([]);
-    }
+  const exportCSV = () => {
+    const headers = ['Name', 'Roll No', 'Target Exam', 'Avg Score', 'Time (min)', 'Date'];
+    const rows = filteredResults.map(r => {
+      const scores = Object.values(r.sectionScores);
+      const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+      return [r.student.name, '', r.student.targetExam, avg, Math.round(r.timeSpent / 60), new Date(r.completedAt).toLocaleDateString()];
+    });
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'lfgos-cat-results.csv'; a.click();
   };
+
+  const filteredResults = results.filter(r =>
+    r.student.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (selectedResult) {
     return (
@@ -52,13 +72,12 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <div className="sticky top-0 z-40 bg-card border-b border-border px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <h1 className="font-display text-xl font-bold text-foreground">Admin Dashboard</h1>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleClearAll} className="font-body text-destructive">
-              <Trash2 className="h-4 w-4 mr-1" /> Clear All
+            <Button variant="outline" size="sm" onClick={exportCSV} className="font-body">
+              <Download className="h-4 w-4 mr-1" /> Export CSV
             </Button>
             <Button variant="ghost" size="sm" onClick={handleLogout} className="font-body">
               <LogOut className="h-4 w-4 mr-1" /> Logout
@@ -83,8 +102,8 @@ const AdminDashboard = () => {
           </Card>
           <Card className="shadow-card">
             <CardContent className="p-6 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
-                <span className="text-success text-lg">📊</span>
+              <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
+                <span className="text-lg">📊</span>
               </div>
               <div>
                 <p className="text-2xl font-bold font-display text-foreground">
@@ -99,8 +118,8 @@ const AdminDashboard = () => {
           </Card>
           <Card className="shadow-card">
             <CardContent className="p-6 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-info/10 flex items-center justify-center">
-                <span className="text-info text-lg">⏱</span>
+              <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
+                <span className="text-lg">⏱</span>
               </div>
               <div>
                 <p className="text-2xl font-bold font-display text-foreground">
@@ -112,15 +131,23 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
-        {/* Results table */}
+        {/* Search & Results */}
         <Card className="shadow-card">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-display text-lg">Student Results</CardTitle>
+            <Input
+              placeholder="Search by name..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="max-w-xs"
+            />
           </CardHeader>
           <CardContent>
-            {results.length === 0 ? (
+            {loadingResults ? (
+              <div className="text-center py-12 text-muted-foreground font-body">Loading results...</div>
+            ) : filteredResults.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground font-body">
-                <p className="text-lg mb-2">No assessments completed yet</p>
+                <p className="text-lg mb-2">No assessments found</p>
                 <p className="text-sm">Results will appear here once students complete their tests.</p>
               </div>
             ) : (
@@ -137,15 +164,15 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {results.map((r, i) => {
+                    {filteredResults.map((r, i) => {
                       const scores = Object.values(r.sectionScores);
                       const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
                       return (
-                        <tr key={i} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                        <tr key={r.id || i} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                           <td className="py-3 px-4 font-body font-medium text-foreground">{r.student.name}</td>
                           <td className="py-3 px-4 font-body text-muted-foreground">{r.student.targetExam}</td>
                           <td className="py-3 px-4">
-                            <span className={`font-body font-medium ${avg >= 70 ? 'text-success' : avg >= 40 ? 'text-warning' : 'text-destructive'}`}>
+                            <span className={`font-body font-medium ${avg >= 70 ? 'text-green-600' : avg >= 40 ? 'text-yellow-600' : 'text-destructive'}`}>
                               {avg}%
                             </span>
                           </td>
