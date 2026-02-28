@@ -27,5 +27,7 @@ jobs:
           server: ftpupload.net
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./dist/ # This uploads ONLY the finished website
+          local-dir: ./dist/ 
           server-dir: htdocs/
+          protocol: ftp
+          port: 21
