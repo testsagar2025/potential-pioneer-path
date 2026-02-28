@@ -1,18 +1,25 @@
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, BookOpen, Brain, AlertTriangle, Pencil } from 'lucide-react';
 
 const instructions = [
-  { icon: Clock, text: 'Total duration: 45 minutes. Timer starts once you begin.' },
-  { icon: BookOpen, text: '8 sections: Math, Physics, Chemistry, Biology, English, Situational Judgment, Self-Reflection, and Concentration Stress Test.' },
-  { icon: Brain, text: 'Questions adapt to your level — difficulty increases or decreases based on your performance.' },
+  { icon: Clock, text: 'Each section has its own timer. The section auto-submits when time runs out.' },
+  { icon: BookOpen, text: '8 sections: Math (10 min), Physics (8 min), Chemistry (8 min), Biology (6 min), English (3 min), Situational Judgment (4 min), Self-Reflection (2 min), Concentration Stress Test (5 min).' },
+  { icon: Brain, text: 'The stress test gives you 30 seconds per question with a visible countdown. Speed matters!' },
   { icon: AlertTriangle, text: 'The stress test section includes simulated distractions. Stay focused!' },
   { icon: Pencil, text: 'Use blank paper for rough work. All answers must be typed.' },
 ];
 
 const Instructions = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) navigate('/student-login');
+  }, [user, loading, navigate]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
@@ -32,10 +39,10 @@ const Instructions = () => {
             ))}
           </div>
 
-          <div className="bg-accent/30 border border-accent rounded-lg p-4 text-center">
-            <p className="font-body text-sm text-accent-foreground">
-              <strong>Important:</strong> Your answers are auto-saved every 30 seconds. 
-              The test will auto-submit when the timer reaches zero. Reports are <strong>only visible to administrators</strong>.
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-center">
+            <p className="font-body text-sm text-foreground">
+              <strong>Important:</strong> Your answers are auto-saved every 30 seconds.
+              Reports are <strong>only visible to administrators</strong>.
             </p>
           </div>
 

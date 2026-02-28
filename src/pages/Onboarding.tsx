@@ -1,27 +1,53 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { saveStudentSession, type Student } from '@/lib/auth';
+import { useAuth } from '@/hooks/useAuth';
+import { saveStudentOnboarding, getStudentOnboarding } from '@/lib/auth';
 
 const subjects = ['Physics', 'Chemistry', 'Math', 'Biology', 'English'];
 
 const Onboarding = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const [targetExam, setTargetExam] = useState<'JEE' | 'NEET' | 'Both'>('JEE');
   const [preboard1, setPreboard1] = useState<Record<string, number>>({});
   const [preboard2, setPreboard2] = useState<Record<string, number>>({});
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!loading && !user) navigate('/student-login');
+  }, [user, loading, navigate]);
+
+  // Load existing onboarding data
+  useEffect(() => {
+    if (user) {
+      getStudentOnboarding(user.id).then(data => {
+        if (data) {
+          setTargetExam(data.target_exam as 'JEE' | 'NEET' | 'Both');
+          setPreboard1(data.preboard1 as Record<string, number> || {});
+          setPreboard2(data.preboard2 as Record<string, number> || {});
+        }
+      });
+    }
+  }, [user]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const name = localStorage.getItem('student_name') || 'Student';
-    
-    const student: Student = { name, targetExam, preboard1, preboard2 };
-    saveStudentSession(student);
-    navigate('/instructions');
+    if (!user) return;
+
+    setSubmitting(true);
+    try {
+      await saveStudentOnboarding(user.id, targetExam, preboard1, preboard2);
+      navigate('/instructions');
+    } catch (err: any) {
+      setError(err.message || 'Failed to save');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const updateMarks = (
@@ -32,6 +58,8 @@ const Onboarding = () => {
     const num = parseInt(value) || 0;
     setter(prev => ({ ...prev, [subject]: Math.min(100, Math.max(0, num)) }));
   };
+
+  if (loading) return null;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
@@ -103,8 +131,8 @@ const Onboarding = () => {
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full bg-gradient-hero text-primary-foreground font-body py-5 text-lg">
-              Continue to Instructions
+            <Button type="submit" disabled={submitting} className="w-full bg-gradient-hero text-primary-foreground font-body py-5 text-lg">
+              {submitting ? 'Saving...' : 'Continue to Instructions'}
             </Button>
           </form>
         </CardContent>

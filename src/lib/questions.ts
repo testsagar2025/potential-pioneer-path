@@ -74,10 +74,10 @@ const reflectionQuestions: Question[] = [
 
 const stressTestQuestions: Question[] = [
   { id: 'st1', section: 'stress', text: '47 + 86 = ?', type: 'calculation', difficulty: 1, topic: 'Mental Math' },
-  { id: 'st2', section: 'stress', text: '125 × 8 = ?', type: 'calculation', difficulty: 2, topic: 'Mental Math' },
-  { id: 'st3', section: 'stress', text: '1000 ÷ 25 = ?', type: 'calculation', difficulty: 2, topic: 'Mental Math' },
-  { id: 'st4', section: 'stress', text: '√144 = ?', type: 'calculation', difficulty: 1, topic: 'Mental Math' },
-  { id: 'st5', section: 'stress', text: '15% of 360 = ?', type: 'calculation', difficulty: 2, topic: 'Mental Math' },
+  { id: 'st2', section: 'stress', text: '15 × 12 = ?', type: 'calculation', difficulty: 2, topic: 'Mental Math' },
+  { id: 'st3', section: 'stress', text: '144 ÷ 12 = ?', type: 'calculation', difficulty: 2, topic: 'Mental Math' },
+  { id: 'st4', section: 'stress', text: '25² = ?', type: 'calculation', difficulty: 1, topic: 'Mental Math' },
+  { id: 'st5', section: 'stress', text: '√225 = ?', type: 'calculation', difficulty: 2, topic: 'Mental Math' },
   { id: 'st6', section: 'stress', text: '73 - 48 = ?', type: 'calculation', difficulty: 1, topic: 'Mental Math' },
   { id: 'st7', section: 'stress', text: '64 × 7 = ?', type: 'calculation', difficulty: 2, topic: 'Mental Math' },
   { id: 'st8', section: 'stress', text: '999 + 456 = ?', type: 'calculation', difficulty: 2, topic: 'Mental Math' },
@@ -86,7 +86,7 @@ const stressTestQuestions: Question[] = [
 ];
 
 export const stressTestCorrectAnswers: Record<string, string> = {
-  st1: '133', st2: '1000', st3: '40', st4: '12', st5: '54',
+  st1: '133', st2: '180', st3: '12', st4: '625', st5: '15',
   st6: '25', st7: '448', st8: '1455', st9: '256', st10: '42',
 };
 
@@ -102,16 +102,16 @@ export interface TestSection {
   id: string;
   title: string;
   questions: Question[];
-  timeLimit?: number; // minutes
+  timeLimit?: number;
 }
 
 export const testSections: TestSection[] = [
-  { id: 'math', title: 'Mathematics', questions: mathQuestions },
-  { id: 'physics', title: 'Physics', questions: physicsQuestions },
-  { id: 'chemistry', title: 'Chemistry', questions: chemistryQuestions },
-  { id: 'biology', title: 'Biology', questions: biologyQuestions },
-  { id: 'english', title: 'English Comprehension', questions: englishQuestions },
-  { id: 'situational', title: 'Situational Judgment', questions: situationalQuestions },
-  { id: 'reflection', title: 'Self-Reflection', questions: reflectionQuestions },
+  { id: 'math', title: 'Mathematics', questions: mathQuestions, timeLimit: 10 },
+  { id: 'physics', title: 'Physics', questions: physicsQuestions, timeLimit: 8 },
+  { id: 'chemistry', title: 'Chemistry', questions: chemistryQuestions, timeLimit: 8 },
+  { id: 'biology', title: 'Biology', questions: biologyQuestions, timeLimit: 6 },
+  { id: 'english', title: 'English Comprehension', questions: englishQuestions, timeLimit: 3 },
+  { id: 'situational', title: 'Situational Judgment', questions: situationalQuestions, timeLimit: 4 },
+  { id: 'reflection', title: 'Self-Reflection', questions: reflectionQuestions, timeLimit: 2 },
   { id: 'stress', title: 'Concentration Stress Test', questions: stressTestQuestions, timeLimit: 5 },
 ];

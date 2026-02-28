@@ -4,24 +4,33 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, LogIn } from 'lucide-react';
+import { signIn } from '@/lib/auth';
 
 const StudentLogin = () => {
   const navigate = useNavigate();
-  const [name, setName] = useState('');
-  const [rollNumber, setRollNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !rollNumber.trim()) {
+    setError('');
+    if (!email.trim() || !password) {
       setError('Please fill in all fields');
       return;
     }
-    // Store basic info, move to onboarding
-    localStorage.setItem('student_name', name.trim());
-    localStorage.setItem('student_roll', rollNumber.trim());
-    navigate('/onboarding');
+
+    setLoading(true);
+    try {
+      await signIn(email, password);
+      navigate('/onboarding');
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -31,23 +40,30 @@ const StudentLogin = () => {
           <Button variant="ghost" size="sm" className="absolute left-4 top-4" onClick={() => navigate('/')}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Back
           </Button>
+          <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <LogIn className="h-5 w-5 text-primary" />
+          </div>
           <CardTitle className="font-display text-2xl">Student Login</CardTitle>
-          <CardDescription className="font-body">Enter your details to begin the assessment</CardDescription>
+          <CardDescription className="font-body">Login with your registered email to begin the assessment</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <Label htmlFor="name" className="font-body">Full Name</Label>
-              <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Enter your full name" className="mt-1" />
+              <Label htmlFor="email" className="font-body">Email Address</Label>
+              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your email" className="mt-1" />
             </div>
             <div>
-              <Label htmlFor="roll" className="font-body">Roll Number</Label>
-              <Input id="roll" value={rollNumber} onChange={e => setRollNumber(e.target.value)} placeholder="Enter your roll number" className="mt-1" />
+              <Label htmlFor="password" className="font-body">Password</Label>
+              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password" className="mt-1" />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full bg-gradient-hero text-primary-foreground font-body py-5">
-              Continue to Assessment
+            <Button type="submit" disabled={loading} className="w-full bg-gradient-hero text-primary-foreground font-body py-5">
+              {loading ? 'Logging in...' : 'Login & Continue'}
             </Button>
+            <p className="text-center text-sm text-muted-foreground font-body">
+              Don't have an account?{' '}
+              <button type="button" onClick={() => navigate('/register')} className="text-primary underline">Register here</button>
+            </p>
           </form>
         </CardContent>
       </Card>
