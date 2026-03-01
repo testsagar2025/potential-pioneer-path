@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowLeft, LogIn } from 'lucide-react';
-import { signIn } from '@/lib/auth';
+import { supabase } from '@/integrations/supabase/client';
 
 const StudentLogin = () => {
   const navigate = useNavigate();
@@ -24,10 +24,22 @@ const StudentLogin = () => {
 
     setLoading(true);
     try {
-      await signIn(email, password);
-      navigate('/onboarding');
+      // Sign out any existing session first to avoid conflicts
+      await supabase.auth.signOut();
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        if (signInError.message?.includes('Email not confirmed')) {
+          setError('Email not confirmed. Please check your inbox and verify your email first.');
+        } else {
+          setError(signInError.message || 'Login failed');
+        }
+        return;
+      }
+      if (data?.user) {
+        navigate('/onboarding');
+      }
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      setError(err.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }
