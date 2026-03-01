@@ -16,21 +16,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        const { data } = await supabase.from('profiles').select('*').eq('user_id', session.user.id).single();
-        setProfile(data);
+        // Don't await — fetch profile in background to avoid blocking signIn
+        supabase.from('profiles').select('*').eq('user_id', session.user.id).single().then(({ data }) => {
+          setProfile(data ?? null);
+        });
       } else {
         setProfile(null);
       }
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        supabase.from('profiles').select('*').eq('user_id', session.user.id).single().then(({ data }) => setProfile(data));
+        try {
+          const { data } = await supabase.from('profiles').select('*').eq('user_id', session.user.id).single();
+          setProfile(data ?? null);
+        } catch {
+          setProfile(null);
+        }
       }
       setLoading(false);
     });

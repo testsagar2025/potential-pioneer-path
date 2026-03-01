@@ -24,12 +24,12 @@ const StudentLogin = () => {
 
     setLoading(true);
     try {
-      // Sign out any existing session first to avoid conflicts
-      await supabase.auth.signOut();
       const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) {
         if (signInError.message?.includes('Email not confirmed')) {
           setError('Email not confirmed. Please check your inbox and verify your email first.');
+        } else if (signInError.message?.includes('Invalid login credentials')) {
+          setError('Invalid email or password. Please try again.');
         } else {
           setError(signInError.message || 'Login failed');
         }
