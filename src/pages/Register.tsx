@@ -42,9 +42,9 @@ const Register = () => {
       await signUp(email, password, name.trim(), rollNumber.trim(), phone.trim());
       toast({
         title: 'Registration Successful!',
-        description: 'Please check your email to verify your account before logging in.',
+        description: 'You are now logged in. Redirecting...',
       });
-      navigate('/student-login');
+      navigate('/onboarding');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {
